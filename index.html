@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+        <link rel="stylesheet" href="stylesheet.css"/>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+        <script src="jquery-3.6.0.min.js"></script>
+        <title>Maps to GPX</title>
+    </head>
+    <body>
+        <div id="map"></div>
+        <form>
+            <label for="url">Plak hier uw Google Maps route URL: </label>
+            <input type="text" id="url" name="url"/>
+            <button type="button" onclick="convert()">convert</button>
+        </form>
+    </body>
+    <script>
+        const map = L.map('map').setView([52.081057821773804, 4.324206744627572], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        }).addTo(map);
+
+        function convert() {
+            const route = document.getElementById("url");
+            
+            $.ajax({
+                type: "GET",
+                url: route,
+                dataType: "xml",
+                success: function(xml) {
+                    let points = [];
+                    let bounds = [];
+
+                    console.log(xml);
+                    console.log(xml.find("trkpt"));
+
+                    $(xml).find("trkpt").each(function() {
+                        let lat = $(this).attr("lat");
+                        let lon = $(this).attr("lon");
+
+                        let p = L.latLng(lat, long);
+                        
+                        points.push(p);
+                        bounds.extend(L.latLngBounds(p));  
+                    });
+
+                    const poly = L.polyline(points, {color: 'red'}).addTo(map);
+
+                    map.fitBounds(poly.getBounds());
+                    map.fitBounds(bounds);
+                }       
+            });
+        }
+    </script>
+</html>
+<!-- https://www.google.com/maps/dir/Leliekeverstraat,+2492+RH+Den+Haag/Werner+von+Siemensstraat,+Zoetermeer/@52.0552054,4.4197541,13z/data=!3m1!4b1!4m14!4m13!1m5!1m1!1s0x47c5c9cc1afcf453:0x71f32d2a10ee6e8e!2m2!1d4.4146027!2d52.0612076!1m5!1m1!1s0x47c5cec6cab997b3:0xf8695ba07179cfd9!2m2!1d4.5169599!2d52.0445151!3e0 -->
