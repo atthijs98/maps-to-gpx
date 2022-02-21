@@ -1,0 +1,15 @@
+#map { 
+    height: 680px;
+}
+
+form div.row > input{
+    display: inline-block;
+}
+
+input {
+    display: block;
+}
+
+form {
+    width: 800px;
+}
