@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="css/stylesheet.css"/>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <title>Maps</title>
+</head>
+<body>
+<div id="container">
+    <div id="map"></div>
+    <div id="sidebar">
+        <div>
+            <b>Travel Mode:</b>
+            <select id="travel-mode">
+                <option value="DRIVING">Auto</option>
+                <option value="BICYCLING">Fiets</option>
+                <option value="WALKING">Lopen</option>
+            </select>
+            <br/>
+            <b>Start:</b>
+            <select id="start">
+                <option value="Intratuin Zoetermeer">Intratuin Zoetermeer</option>
+                <option value="Leliekeverstraat 26, Den Haag">Thuis</option>
+                <option value="Albert Heijn, Simon Carmiggelthof, Den Haag">Albert Heijn</option>
+                <option value="Werner von Siemensstraat 5, 2712 PB Zoetermeer">Yunex Traffic</option>
+            </select>
+            <br />
+            <b>Waypoints:</b> <br />
+            <i>(Ctrl+Click or Cmd+Click for multiple selection)</i> <br />
+            <select multiple id="waypoints">
+                <option value="montreal, quebec">Montreal, QBC</option>
+                <option value="toronto, ont">Toronto, ONT</option>
+                <option value="chicago, il">Chicago</option>
+                <option value="winnipeg, mb">Winnipeg</option>
+                <option value="fargo, nd">Fargo</option>
+                <option value="calgary, ab">Calgary</option>
+                <option value="spokane, wa">Spokane</option>
+            </select>
+            <br />
+            <b>End:</b>
+            <select id="end">
+                <option value="Leliekeverstraat 26, Den Haag">Thuis</option>
+                <option value="Intratuin Zoetermeer">Intratuin Zoetermeer</option>
+                <option value="Albert Heijn, Simon Carmiggelthof, Den Haag">Albert Heijn</option>
+                <option value="Werner von Siemensstraat 5, 2712 PB Zoetermeer">Yunex Traffic</option>
+                <option value="Murraijstraat, 2291 PZ Wateringen">Murraijstraat</option>
+            </select>
+            <br />
+            <input type="submit" id="submit" />
+        </div>
+        <div id="directions-panel"></div>
+    </div>
+</div>
+<script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&v=weekly&channel=2"
+        async
+></script>
+</body>
+<script>
+    let initialResponse;
+
+    function initMap() {
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 12,
+            center: { lat:  52.081057821773804, lng: 4.324206744627572 },
+        });
+
+        directionsRenderer.setMap(map);
+        document.getElementById("submit").addEventListener("click", () => {
+            calculateRoute(directionsService);
+        });
+    }
+
+    function calculateRoute(directionsService) {
+        const waypts = [];
+        const checkboxArray = document.getElementById("waypoints");
+
+        for (let i = 0; i < checkboxArray.length; i++) {
+            if (checkboxArray.options[i].selected) {
+                waypts.push({
+                    location: checkboxArray[i].value,
+                    stopover: true,
+                });
+            }
+        }
+
+        directionsService
+            .route({
+                origin: document.getElementById("start").value,
+                destination: document.getElementById("end").value,
+                waypoints: waypts,
+                optimizeWaypoints: true,
+                provideRouteAlternatives: true,
+                travelMode: getTravelMode(),
+            })
+            .then((response) => {
+                initialResponse = response;
+                console.log(initialResponse);
+                const routes = response.routes;
+                setOptions(routes);
+            })
+            .catch((e) => window.alert("Directions request failed due to " + status));
+    }
+
+    function displayRoute(element) {
+        console.log(initialResponse);
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        let id = element.attributes.id.value;
+        const routeNr = parseInt(id.split("-")[1]);
+        removeWrongRoutes(routeNr);
+        console.log(initialResponse);
+        directionsRenderer.setDirections(initialResponse);
+        initialResponse = "";
+    }
+
+    function removeWrongRoutes(route) {
+        for (let i = 0; i < intialResponse.routes.length; i++) {
+            if (i !== route) {
+                delete initialResponse.routes[i];
+            }
+        }
+    }
+
+    initMap();
+
+    function getTravelMode() {
+        const travelMode = document.getElementById("travel-mode").value;
+        if (travelMode === "DRIVING") {
+            return google.maps.TravelMode.DRIVING;
+        } else if (travelMode === "BICYCLING") {
+            return google.maps.TravelMode.BICYCLING;
+        } else if (travelMode === "WALKING") {
+            return google.maps.TravelMode.WALKING;
+        } else {
+            return google.maps.TravelMode.DRIVING;
+        }
+    }
+
+    function setOptions(routes) {
+        const summaryPanel = document.getElementById("directions-panel");
+
+        summaryPanel.innerHTML = "";
+        summaryPanel.innerHTML += "Kies een route:";
+
+        // For each route, display summary information.
+        for (let i = 0; i < routes.length; i++) {
+            summaryPanel.innerHTML += "<div id='card'><a class='card' onclick='displayRoute(this)' id='route-"+i+"'></a></div>";
+            for (let j = 0; j < routes[j].legs.length; j++) {
+                const routeSegment = j + 1;
+                let card = document.getElementById("route-" + i);
+                card.innerHTML = "<b>Via "+routes[i].summary+"</b><br>";
+                card.innerHTML +=
+                    "<b>Route Segment: " + routeSegment + "</b><br>";
+                card.innerHTML += routes[i].legs[j].start_address + " to ";
+                card.innerHTML += routes[i].legs[j].end_address + "<br>";
+                card.innerHTML += routes[i].legs[j].distance.text + "<br><br>";
+            }
+        }
+    }
+</script>
+</html>
